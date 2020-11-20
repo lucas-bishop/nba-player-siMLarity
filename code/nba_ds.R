@@ -21,11 +21,11 @@ advanced <- read_csv("data/advancedNBA.csv") %>% select(-badcol)
   
 #check if these table numbers change uponreload: they do, change script to pull all tables
 extra1 <- read_html("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qualified/dbl_dbl/All/desc/ 1") %>% 
-  html_table("table#table-4978.tablesaw.compact.tablesaw-stack", header = NA, fill = TRUE)
-extra2 <- read_html("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qualified/dbl_dbl/All/desc/ 1") %>% 
-  html_table("table#table-3944.tablesaw.compact.tablesaw-stack", header = NA, fill = TRUE)
-extra3 <- read_html("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qualified/dbl_dbl/All/desc/ 1") %>% 
-  html_table("table#table-4392.tablesaw.compact.tablesaw-stack", header = NA, fill = TRUE)
+  html_table("table#table-7945.tablesaw.compact.tablesaw-stack", header = NA, fill = TRUE)
+extra2 <- read_html("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qualified/dbl_dbl/All/desc/ 2") %>% 
+  html_table("table#table-4389.tablesaw.compact.tablesaw-stack", header = NA, fill = TRUE)
+extra3 <- read_html("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qualified/dbl_dbl/All/desc/ 3") %>% 
+  html_table("table#table-9644.tablesaw.compact.tablesaw-stack", header = NA, fill = TRUE)
 
 # get rid of the win share stats that are redundant in misc dataset
 misc <- rbind(extra1[[1]], extra2[[1]], extra3[[1]]) %>% select(-'#', -"OWS", -"DWS", -"WS")
@@ -37,8 +37,12 @@ misc$Player=gsub(",", "", misc$Player, fixed = TRUE)
 # Had initally tried to replace all of the special characters in foreign names, but eventually just changed the csv files before reading in
 
 #Now have full data frame with combined data - can add more columns if I find extra exportable stats websites
-full_stats <- full_join(merged_stats, misc, by = 'Player') %>% unique()
+full_stats <- full_join(merged_stats, misc, by = 'Player') %>% 
+  unique() %>% select(-Team) %>% mutate(MPG = MP / G)
 
+#This full Df will have plenty of NA values, because the misc dataset has qualifiers that filter out irrelevant players based on min, pts, ast, stl, blk, etc.
+full_stats_qual <- full_stats %>% drop_na()
+#This leaves us with a data frame of players that have data entries in all 65 variables, or 'relevant' players
 
 
 
