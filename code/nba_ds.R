@@ -1,5 +1,6 @@
 library(tidyverse)
 library(rvest)
+library(BBmisc)
 
 # this function needs to be tuned to incclude all table elements from each of the 3 pages
 # then select the ones we need as nodes
@@ -43,6 +44,22 @@ full_stats <- full_join(merged_stats, misc, by = 'Player') %>%
 #This full Df will have plenty of NA values, because the misc dataset has qualifiers that filter out irrelevant players based on min, pts, ast, stl, blk, etc.
 full_stats_qual <- full_stats %>% drop_na()
 #This leaves us with a data frame of players that have data entries in all 65 variables, or 'relevant' players
+# now to subset this data for only looking at players that play significant minutes. We decide this. I based it on the average of qualified players.
+cutoff <- 24.5
+full_stats_qual <- subset(full_stats_qual, MPG >= cutoff)
+
+## Normalize data? So values with large ranges like pts don't have more weight than small range values like blk/stl
+# Use BBmisc::normalize to (for each value) subtract the mean of the feature-range from that value and divide by the SD of the feature
+normalized_data <- normalize(full_stats_qual, method = "standardize")
+# Now we have a tidy clean dfs to work with, can start analysis
+
+###########
+#analysis#
+###########
+
+corr_tbl <- normalized_data %>% select(-Player, -Pos, -Tm)
+
+corrplot::corrplot(cor(corr_tbl), method = "circle")
 
 
 
