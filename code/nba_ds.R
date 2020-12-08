@@ -45,23 +45,37 @@ full_stats <- full_join(merged_stats, misc, by = 'Player') %>%
 full_stats_qual <- full_stats %>% drop_na()
 #This leaves us with a data frame of players that have data entries in all 65 variables, or 'relevant' players
 # now to subset this data for only looking at players that play significant minutes. We decide this. I based it on the average of qualified players.
+# could use a rarefaction curve to see what mpg cutoff to rarefy to
 cutoff <- 24.5
 full_stats_qual <- subset(full_stats_qual, MPG >= cutoff)
 
 ## Normalize data? So values with large ranges like pts don't have more weight than small range values like blk/stl
 # Use BBmisc::normalize to (for each value) subtract the mean of the feature-range from that value and divide by the SD of the feature
-normalized_data <- normalize(full_stats_qual, method = "standardize")
+normalized_numeric <- normalize(full_stats_qual, method = "standardize")
 # Now we have a tidy clean dfs to work with, can start analysis
+
+normalized_numeric <- normalized_numeric[c(7:65)]
+# Heat map of all features
+corrplot::corrplot(cor(corr_tbl), method = "circle")
 
 ###########
 #analysis#
 ###########
 
-corr_tbl <- normalized_data %>% select(-Player, -Pos, -Tm)
+# PCoA
+# covariance matrix creation
+cov_matrix <- cov(normalized_numeric) %>% round(3)
 
-corrplot::corrplot(cor(corr_tbl), method = "circle")
+# find eigenvectors
+eigenvectors <- eigen(cov_matrix)$vectors
 
+# select first 2 eigenvectors
+eigenv2 <- eigenvectors[,(1:2)]
 
+# convert to matrix for ordination
+statsmatrix <- tibble(normalized_numeric)
+
+#  
 
 
 
