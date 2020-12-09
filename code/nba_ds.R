@@ -1,6 +1,7 @@
 library(tidyverse)
 library(rvest)
 library(BBmisc)
+library(ggrepel)
 
 # this function needs to be tuned to incclude all table elements from each of the 3 pages
 # then select the ones we need as nodes
@@ -32,6 +33,7 @@ extra3 <- read_html("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qua
 misc <- rbind(extra1[[1]], extra2[[1]], extra3[[1]]) %>% select(-'#', -"OWS", -"DWS", -"WS")
 merged_stats <- inner_join(traditional, advanced) %>% select(-Rk) 
   
+
 ## cleanup before misc merge
 
 misc$Player=gsub(",", "", misc$Player, fixed = TRUE)
@@ -46,7 +48,7 @@ full_stats_qual <- full_stats %>% drop_na()
 #This leaves us with a data frame of players that have data entries in all 65 variables, or 'relevant' players
 # now to subset this data for only looking at players that play significant minutes. We decide this. I based it on the average of qualified players.
 # could use a rarefaction curve to see what mpg cutoff to rarefy to
-cutoff <- 24.5
+cutoff <- 25.5
 full_stats_qual <- subset(full_stats_qual, MPG >= cutoff)
 
 ## Normalize data? So values with large ranges like pts don't have more weight than small range values like blk/stl
@@ -56,7 +58,8 @@ normalized_numeric <- normalize(full_stats_qual, method = "standardize")
 
 normalized_numeric <- normalized_numeric[c(7:65)]
 # Heat map of all features
-corrplot::corrplot(cor(corr_tbl), method = "circle")
+cplot_big <- corrplot::corrplot(cor(normalized_numeric), method = "circle")
+# ggsave(cplot_big) not sure if need to save this
 
 ###########
 #analysis#
@@ -73,13 +76,24 @@ eigenvectors <- eigen(cov_matrix)$vectors
 eigenv2 <- eigenvectors[,(1:2)]
 
 # convert to matrix for ordination
-statsmatrix <- tibble(normalized_numeric)
+statsmatrix <- data.matrix(normalized_numeric)
 
-#  
+# matrix multiplication (multiplying the arrays element-wise?)
+pc2 <- statsmatrix%*%eigenv2
 
+# covert back for ggplot
+numeric_df <- as_tibble(pc2)
 
+# plot ordination
+player_ordination <- ggplot(numeric_df,aes(numeric_df$V1, numeric_df$V2)) +
+  labs(x="PC1",y="PC2", title = "2019 NBA Season")+
+  # coloring by position and distinguishing by Value Over Replacement Player lets us draw some conclusions
+  geom_point(data=full_stats_qual,aes(color = Pos, size= VORP))+
+  geom_text_repel(data=full_stats_qual, aes(label=Player))
 
+ggsave("player_ordination.pdf", player_ordination, width = 15, height = 15, units = "in")
 
+# Need to place even higher qualifications for MPG so the ordination is not as crowded
 
 
 
