@@ -2,26 +2,30 @@ library(tidyverse)
 library(rvest)
 library(BBmisc)
 library(ggrepel)
+library(corrplot)
+library(factoextra)
 
 # this function needs to be tuned to incclude all table elements from each of the 3 pages
 # then select the ones we need as nodes
-pull_player_data <- function(url){
-  print(url)
-  read_html(url) %>%
-    html_table("table#table-4978.tablesaw.compact.tablesaw-stack", header = NA, fill = TRUE)
-}
+# pull_player_data <- function(url){
+#   print(url)
+#   read_html(url) %>%
+#     html_table("table#table-4978.tablesaw.compact.tablesaw-stack", header = NA, fill = TRUE)
+# }
 
+# html_pages <- c(1:3) %>% 
+#  paste("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qualified/dbl_dbl/All/desc/",.)
 
-html_pages <- c(1:3) %>% 
-  paste("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qualified/dbl_dbl/All/desc/",.)
-
-
+######
+#data#
+######
+setwd("C:/Users/bisho/Documents/NBA player siMLarity/")
 traditional <- read_csv("data/36minutes.csv") %>% select(-badcol)
 advanced <- read_csv("data/advancedNBA.csv") %>% select(-badcol)
-# make last df with our above functions
-#extra <- map_dfr(html_pages, pull_player_data)
+# should make last df with our above function and map it to the html_pages list:
+# extra <- map_dfr(html_pages, pull_player_data)
   
-#check if these table numbers change uponreload: they do, change script to pull all tables
+# extra pages for misc df have only qualified players, qualifications found here: https://basketball.realgm.com/info/glossary
 extra1 <- read_html("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qualified/dbl_dbl/All/desc/ 1") %>% 
   html_table("table#table-7945.tablesaw.compact.tablesaw-stack", header = NA, fill = TRUE)
 extra2 <- read_html("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qualified/dbl_dbl/All/desc/ 2") %>% 
@@ -29,8 +33,9 @@ extra2 <- read_html("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qua
 extra3 <- read_html("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qualified/dbl_dbl/All/desc/ 3") %>% 
   html_table("table#table-9644.tablesaw.compact.tablesaw-stack", header = NA, fill = TRUE)
 
+# need to get rid of positions with dashes in them too
 # get rid of the win share stats that are redundant in misc dataset
-misc <- rbind(extra1[[1]], extra2[[1]], extra3[[1]]) %>% select(-'#', -"OWS", -"DWS", -"WS")
+misc <- rbind(extra1[[13]], extra2[[13]], extra3[[13]]) %>% select(-'#', -"OWS", -"DWS", -"WS")
 merged_stats <- inner_join(traditional, advanced) %>% select(-Rk) 
   
 
@@ -65,7 +70,8 @@ cplot_big <- corrplot::corrplot(cor(normalized_numeric), method = "circle")
 #analysis#
 ###########
 
-# PCoA
+### PCoA ###
+
 # covariance matrix creation
 cov_matrix <- cov(normalized_numeric) %>% round(3)
 
@@ -94,11 +100,34 @@ player_ordination <- ggplot(numeric_df,aes(numeric_df$V1, numeric_df$V2)) +
 ggsave("player_ordination.pdf", player_ordination, width = 15, height = 15, units = "in")
 
 # Need to place even higher qualifications for MPG so the ordination is not as crowded
+# can add ordinations on only offensive/defensince stats
+
+### K-means clustering ###
+row.names(normalized_numeric) <- full_stats_qual$Player 
+
+# Clarify distance measures
+res_dist <- get_dist(normalized_numeric, stand = TRUE, method = "euclidean")
+distance_heatmap <- fviz_dist(res_dist, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
+ggsave("distance_heatmap.pdf", distance_heatmap, width = 15, height = 15, units = "in")
 
 
+# Determinie optimal clusters through different methods
+fviz_nbclust(normalized_numeric, kmeans, method = "wss")
+fviz_nbclust(normalized_numeric, kmeans, method = "silhouette")
+fviz_nbclust(normalized_numeric, kmeans, method = "gap_stat")
+# Looks like it is 9 (7-10 are all decent)
+# this number of clusters may come down with a strciter minute cutoff
 
+km_res <- kmeans(normalized_numeric, 9, nstart = 25)
 
+# Visualize Kmeans 
+# This gives us an ordination of ~9 player types
+kmeans <- fviz_cluster(km_res, normalized_numeric, ellipse = TRUE, ellipse.alpha= 0.1,
+            palette = "viridis",  repel = TRUE, ggtheme = theme_classic(), 
+             main= FALSE, xlab= FALSE, ylab = FALSE)
 
+# Russell Westbrook is his own cluster. LOL
+ggsave("kmeans.pdf", kmeans, width = 15, height = 15, units = "in")
 
 
 
