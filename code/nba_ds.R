@@ -126,10 +126,25 @@ kmeans <- fviz_cluster(km_res, normalized_numeric, ellipse = TRUE, ellipse.alpha
             palette = "viridis",  repel = TRUE, ggtheme = theme_classic(), 
              main= FALSE, xlab= FALSE, ylab = FALSE)
 
-# Russell Westbrook is his own cluster. LOL
+# Russell Westbrook is his own cluster (#7). LOL
 ggsave("kmeans.pdf", kmeans, width = 15, height = 15, units = "in")
+# can add clustering based on offensive or defensive stats once those df's are made above
 
+### Hierarchical clusterin ###
+clusters <- data.frame(sort(km_res$cluster));
+view(km_res)
 
+# hierarchial clustering --------------------------------------------------
+
+res_hc <- hclust(res_dist, method = "ward.D2" )
+
+# Visualize using factoextra
+dendrogram <- fviz_dend(res_hc, k = 9, # Cut in 8 groups
+          cex = 0.5, # label size
+          horiz= TRUE, rect = TRUE,
+          main = "player dendrogram", ylab = "relative distance"# Add rectangle around groups
+)
+ggsave("dendrogram.pdf", dendrogram, width = 15, height = 15, units = "in")
 
 
 
