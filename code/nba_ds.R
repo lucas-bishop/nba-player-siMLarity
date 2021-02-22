@@ -98,6 +98,7 @@ player_ordination <- ggplot(numeric_df,aes(numeric_df$V1, numeric_df$V2)) +
   geom_text_repel(data=full_stats_qual, aes(label=Player))
 
 ggsave("player_ordination.pdf", player_ordination, width = 15, height = 15, units = "in")
+ggsave("player_ordination.jpg", player_ordination, width = 12, height = 12, units = "in")
 
 # Need to place even higher qualifications for MPG so the ordination is not as crowded
 # can add ordinations on only offensive/defensince stats
@@ -109,6 +110,7 @@ row.names(normalized_numeric) <- full_stats_qual$Player
 res_dist <- get_dist(normalized_numeric, stand = TRUE, method = "euclidean")
 distance_heatmap <- fviz_dist(res_dist, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
 ggsave("distance_heatmap.pdf", distance_heatmap, width = 15, height = 15, units = "in")
+ggsave("distance_heatmap.jpg", distance_heatmap, width = 12, height = 12, units = "in")
 
 
 # Determinie optimal clusters through different methods
@@ -128,6 +130,8 @@ kmeans <- fviz_cluster(km_res, normalized_numeric, ellipse = TRUE, ellipse.alpha
 
 # Russell Westbrook is his own cluster (#7). LOL
 ggsave("kmeans.pdf", kmeans, width = 15, height = 15, units = "in")
+ggsave("kmeans.jpg", kmeans, width = 12, height = 12, units = "in")
+
 # can add clustering based on offensive or defensive stats once those df's are made above
 
 ### Hierarchical clusterin ###
@@ -145,6 +149,7 @@ dendrogram <- fviz_dend(res_hc, k = 9, # Cut in 8 groups
           main = "player dendrogram", ylab = "relative distance"# Add rectangle around groups
 )
 ggsave("dendrogram.pdf", dendrogram, width = 15, height = 15, units = "in")
+ggsave("dendrogram.jpg", dendrogram, width = 12, height = 12, units = "in")
 
 
 
