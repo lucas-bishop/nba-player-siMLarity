@@ -1,0 +1,101 @@
+---
+title: "nba_player_similarity"
+author: "Lucas Bishop"
+date: "June 17, 2021"
+output: html_document
+    
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## NBA Data Science
+
+
+### Load Libraries
+
+Load all libraries that are needed for the analysis
+
+```{r, include=FALSE, message=FALSE}
+library(tidyverse)
+library(rvest)
+library(BBmisc)
+library(ggrepel)
+library(corrplot)
+library(factoextra)
+library(kableExtra)
+```
+
+### Set up Data and Scrape (some) of the data from Internet
+```{r}
+setwd("C:/Users/bisho/Documents/NBA player siMLarity/")
+traditional <- read_csv("data/36minutes.csv") %>% select(-badcol)
+advanced <- read_csv("data/advancedNBA.csv") %>% select(-badcol)
+# extra pages for misc df have only qualified players, qualifications found here: https://basketball.realgm.com/info/glossary
+extra1 <- read_html("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qualified/dbl_dbl/All/desc/ 1") %>%
+  html_table("table#table-7945.tablesaw.compact.tablesaw-stack", header = NA, fill = TRUE)
+extra2 <- read_html("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qualified/dbl_dbl/All/desc/ 2") %>%
+  html_table("table#table-4389.tablesaw.compact.tablesaw-stack", header = NA, fill = TRUE)
+extra3 <- read_html("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qualified/dbl_dbl/All/desc/ 3") %>%
+  html_table("table#table-9644.tablesaw.compact.tablesaw-stack", header = NA, fill = TRUE)
+
+```
+
+Further prepare the data: 
+```{r}
+
+# need to get rid of positions with dashes in them too
+# get rid of the win share stats that are redundant in misc dataset
+misc <- rbind(extra1[[3]], extra2[[3]], extra3[[3]]) %>% select(-'#', -"OWS", -"DWS", -"WS")
+merged_stats <- inner_join(traditional, advanced) %>% select(-Rk)
+
+
+## cleanup before misc merge
+
+misc$Player=gsub(",", "", misc$Player, fixed = TRUE)
+
+full_stats <- full_join(merged_stats, misc, by = 'Player') %>%
+  unique() %>% select(-Team) %>% mutate(MPG = MP / G)
+```
+
+Originally I was going to clean up the foreign names within R but got fed up and cleaned in exel and then saved...
+
+BUT! Now we have a full data frame with semi-cleaned data that we can add more columns to if we find more interesting stats.
+
+Now we want to filter this merged data for only entries that we are interested in:
+
+```{r}
+full_stats_qual <- full_stats %>% drop_na()
+#This leaves us with a data frame of players that have data entries in all 65 variables, or 'relevant' players
+# now to subset this data for only looking at players that play significant minutes. I chose 25
+cutoff <- 25.5
+full_stats_qual <- subset(full_stats_qual, MPG >= cutoff)
+```
+
+
+Lets see what that looks like:
+```{r, echo=FALSE}
+# will not show up if the global options are set to a dark theme
+full_stats_qual %>% knitr::kable() %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

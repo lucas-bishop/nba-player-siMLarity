@@ -13,31 +13,30 @@ library(factoextra)
 #     html_table("table#table-4978.tablesaw.compact.tablesaw-stack", header = NA, fill = TRUE)
 # }
 
-# html_pages <- c(1:3) %>% 
+# html_pages <- c(1:3) %>%
 #  paste("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qualified/dbl_dbl/All/desc/",.)
 
 ######
 #data#
 ######
-setwd("C:/Users/bisho/Documents/NBA player siMLarity/")
 traditional <- read_csv("data/36minutes.csv") %>% select(-badcol)
 advanced <- read_csv("data/advancedNBA.csv") %>% select(-badcol)
 # should make last df with our above function and map it to the html_pages list:
 # extra <- map_dfr(html_pages, pull_player_data)
-  
+
 # extra pages for misc df have only qualified players, qualifications found here: https://basketball.realgm.com/info/glossary
-extra1 <- read_html("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qualified/dbl_dbl/All/desc/ 1") %>% 
+extra1 <- read_html("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qualified/dbl_dbl/All/desc/ 1") %>%
   html_table("table#table-7945.tablesaw.compact.tablesaw-stack", header = NA, fill = TRUE)
-extra2 <- read_html("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qualified/dbl_dbl/All/desc/ 2") %>% 
+extra2 <- read_html("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qualified/dbl_dbl/All/desc/ 2") %>%
   html_table("table#table-4389.tablesaw.compact.tablesaw-stack", header = NA, fill = TRUE)
-extra3 <- read_html("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qualified/dbl_dbl/All/desc/ 3") %>% 
+extra3 <- read_html("https://basketball.realgm.com/nba/stats/2019/Misc_Stats/Qualified/dbl_dbl/All/desc/ 3") %>%
   html_table("table#table-9644.tablesaw.compact.tablesaw-stack", header = NA, fill = TRUE)
 
 # need to get rid of positions with dashes in them too
 # get rid of the win share stats that are redundant in misc dataset
-misc <- rbind(extra1[[13]], extra2[[13]], extra3[[13]]) %>% select(-'#', -"OWS", -"DWS", -"WS")
-merged_stats <- inner_join(traditional, advanced) %>% select(-Rk) 
-  
+misc <- rbind(extra1[[1]], extra2[[1]], extra3[[1]]) %>% select(-'#', -"OWS", -"DWS", -"WS")
+merged_stats <- inner_join(traditional, advanced) %>% select(-Rk)
+
 
 ## cleanup before misc merge
 
@@ -45,7 +44,7 @@ misc$Player=gsub(",", "", misc$Player, fixed = TRUE)
 # Had initally tried to replace all of the special characters in foreign names, but eventually just changed the csv files before reading in
 
 #Now have full data frame with combined data - can add more columns if I find extra exportable stats websites
-full_stats <- full_join(merged_stats, misc, by = 'Player') %>% 
+full_stats <- full_join(merged_stats, misc, by = 'Player') %>%
   unique() %>% select(-Team) %>% mutate(MPG = MP / G)
 
 #This full Df will have plenty of NA values, because the misc dataset has qualifiers that filter out irrelevant players based on min, pts, ast, stl, blk, etc.
@@ -104,7 +103,7 @@ ggsave("player_ordination.jpg", player_ordination, width = 12, height = 12, unit
 # can add ordinations on only offensive/defensince stats
 
 ### K-means clustering ###
-row.names(normalized_numeric) <- full_stats_qual$Player 
+row.names(normalized_numeric) <- full_stats_qual$Player
 
 # Clarify distance measures
 res_dist <- get_dist(normalized_numeric, stand = TRUE, method = "euclidean")
@@ -122,10 +121,10 @@ fviz_nbclust(normalized_numeric, kmeans, method = "gap_stat")
 
 km_res <- kmeans(normalized_numeric, 9, nstart = 25)
 
-# Visualize Kmeans 
+# Visualize Kmeans
 # This gives us an ordination of ~9 player types
 kmeans <- fviz_cluster(km_res, normalized_numeric, ellipse = TRUE, ellipse.alpha= 0.1,
-            palette = "viridis",  repel = TRUE, ggtheme = theme_classic(), 
+            palette = "viridis",  repel = TRUE, ggtheme = theme_classic(),
              main= FALSE, xlab= FALSE, ylab = FALSE)
 
 # Russell Westbrook is his own cluster (#7). LOL
